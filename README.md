@@ -13,7 +13,7 @@
 **Гибридный прогнозный пайплайн: коммерческое прогнозирование на TimesFM 2.5 (Apache-2.0),
 исследовательский контур на TimesFM 3.0 — разделены по лицензии и по роли в процессе**
 
-[Документация](docs/) · [Юзер-гайд: роли и шаги](docs/user-guide.md) · [Гайд по данным](docs/data-guide.md) · [Лицензионные правила](docs/license-compliance.md) · [Живая диаграмма (открыть)](https://osmosy.github.io/vector-prediction/vector-prediction.architecture.html)
+[Документация](docs/) · [Юзер-гайд: роли и шаги](docs/user-guide.md) · [Гайд по данным](docs/data-guide.md) · [Лицензионные правила](docs/license-compliance.md) · [Живая диаграмма (открыть)](https://osmosy.github.io/vector-prediction/vector-prediction.architecture.html) · [Сайт доков](https://osmosy.github.io/vector-prediction/)
 
 </div>
 

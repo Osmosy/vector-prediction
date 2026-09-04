@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vector Prediction — Osmosy Vector</title>
+<style>
+  :root {
+    --bg: #0B1220;
+    --surface: #111C2E;
+    --card: #141F33;
+    --card-line: #24344D;
+    --text: #F2F7FD;
+    --muted: #8FA3BC;
+    --accent: #38B2F8;
+    --accent2: #B48CF8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: linear-gradient(115deg, var(--bg) 0%, #131E31 100%);
+    color: var(--text);
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px;
+  }
+  .accent-line { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: var(--accent); }
+  .logo { width: 72px; margin-bottom: 20px; }
+  h1 { font-size: 42px; color: var(--accent); margin-bottom: 8px; letter-spacing: -1px; }
+  .tagline { color: var(--muted); font-size: 15px; margin-bottom: 40px; text-align: center; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+    max-width: 980px;
+    width: 100%;
+  }
+  a.card {
+    background: var(--card);
+    border: 1px solid var(--card-line);
+    border-radius: 14px;
+    padding: 22px 24px;
+    text-decoration: none;
+    color: var(--text);
+    transition: transform .15s, border-color .15s, box-shadow .15s;
+    display: block;
+  }
+  a.card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+    box-shadow: 0 8px 28px rgba(56, 178, 248, .18);
+  }
+  .card h2 { font-size: 17px; color: var(--accent); margin-bottom: 8px; }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .card .tag {
+    display: inline-block; margin-top: 12px;
+    font-size: 10.5px; letter-spacing: 1.5px;
+    color: var(--accent2); font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+  }
+  .card.hero { grid-column: 1 / -1; border-color: var(--accent); }
+  .card.hero h2 { font-size: 20px; }
+  footer { margin-top: 40px; color: var(--muted); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="accent-line"></div>
+
+<img class="logo" src="https://raw.githubusercontent.com/Osmosy/vector-prediction/main/assets/vector-logo.png" alt="Vector Prediction">
+
+<h1>Vector Prediction</h1>
+<p class="tagline">Гибридный прогнозный пайплайн TimesFM · прод на 2.5 (Apache-2.0) · research на 3.0</p>
+
+<div class="grid">
+  <a class="card hero" href="vector-prediction.architecture.html">
+    <h2>Живая диаграмма пайплайна</h2>
+    <p>Интерактивная Archify-диаграмма: люди и агенты, два контура, лицензионная граница. Темы, pan/zoom, трассировка связей, экспорт PNG/SVG.</p>
+    <span class="tag">открыть диаграмму</span>
+  </a>
+  <a class="card" href="user-guide.md">
+    <h2>Юзер-гайд</h2>
+    <p>Роли (люди и агенты), путь данных по шагам, каденция — от выгрузки 1С до плана производства.</p>
+    <span class="tag">документация</span>
+  </a>
+  <a class="card" href="data-guide.md">
+    <h2>Гайд по данным</h2>
+    <p>Какие данные собирать: период, шаг, ковариаты, частые ошибки оформления, чек-лист.</p>
+    <span class="tag">документация</span>
+  </a>
+  <a class="card" href="license-compliance.md">
+    <h2>Лицензионные правила</h2>
+    <p>Разделение контуров по лицензии TimesFM: что разрешено 3.0, что запрещено, коммерческие пути.</p>
+    <span class="tag">документация</span>
+  </a>
+  <a class="card" href="vector-prediction-obsidian-neon.pdf">
+    <h2>Презентация (PDF)</h2>
+    <p>13 слайдов в теме obsidian-neon: проблема, решение, данные, лицензия, бенчмарк, roadmap.</p>
+    <span class="tag">скачать pdf</span>
+  </a>
+  <a class="card" href="vector-prediction-obsidian-neon.pptx">
+    <h2>Презентация (PPTX)</h2>
+    <p>Редактируемая версия — та же дека в PowerPoint / LibreOffice.</p>
+    <span class="tag">скачать pptx</span>
+  </a>
+</div>
+
+<footer>github.com/Osmosy/vector-prediction · Osmosy · 2026</footer>
+</body>
+</html>
