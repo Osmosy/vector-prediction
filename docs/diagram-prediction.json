@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Vector Prediction — гибридный прогнозный пайплайн",
+    "quality_profile": "showcase"
+  },
+  "layout": {
+    "mode": "grid",
+    "cols": 7,
+    "gapX": 34,
+    "gapY": 56
+  },
+  "components": [
+    { "id": "sales", "type": "external", "label": "Продажи", "sublabel": "история продаж", "row": 0, "col": 0 },
+    { "id": "marketing", "type": "external", "label": "Маркетолог", "sublabel": "план промо", "row": 2, "col": 0 },
+
+    { "id": "collector", "type": "backend", "label": "Агент-сборщик", "sublabel": "чек-лист · склейка", "row": 1, "col": 1 },
+    { "id": "data", "type": "database", "label": "data/ready", "sublabel": "history + plan", "row": 1, "col": 2 },
+
+    { "id": "prod", "type": "backend", "label": "Контур A · ПРОД", "sublabel": "TimesFM 2.5 · Apache", "tag": "прод", "row": 0, "col": 3 },
+    { "id": "research", "type": "backend", "label": "Контур B · RESEARCH", "sublabel": "TimesFM 3.0 · non-comm", "tag": "research", "row": 2, "col": 3 },
+
+    { "id": "reviewer", "type": "security", "label": "Агент-ревьюер", "sublabel": "качество · лицензия", "row": 1, "col": 4 },
+    { "id": "out", "type": "database", "label": "out/", "sublabel": "прогноз · метрики", "row": 0, "col": 5 },
+
+    { "id": "director", "type": "external", "label": "Директор", "sublabel": "план производства", "row": 0, "col": 6 }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Люди", "wraps": ["sales", "marketing", "director"] },
+    { "kind": "region", "label": "Агенты Hermes", "wraps": ["collector", "prod", "research", "reviewer"] },
+    { "kind": "security-group", "label": "Лицензионная граница", "wraps": ["research"] }
+  ],
+  "connections": [
+    { "from": "sales", "to": "collector", "label": "выгрузка", "fromSide": "right", "toSide": "top" },
+    { "from": "marketing", "to": "collector", "label": "план промо", "fromSide": "right", "toSide": "bottom" },
+    { "from": "collector", "to": "data", "label": "склейка" },
+    { "from": "data", "to": "prod", "label": "CSV", "fromSide": "top", "toSide": "left" },
+    { "from": "data", "to": "research", "label": "CSV", "variant": "dashed", "fromSide": "bottom", "toSide": "left" },
+    { "from": "research", "to": "reviewer", "label": "сравнение моделей", "variant": "dashed", "fromSide": "right", "toSide": "bottom" },
+    { "from": "prod", "to": "out", "label": "прогноз" },
+    { "from": "out", "to": "director", "label": "отчёт" },
+    { "from": "reviewer", "to": "director", "label": "допуск", "fromSide": "top", "toSide": "bottom" }
+  ]
+}
