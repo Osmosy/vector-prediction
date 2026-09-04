@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Выходы прогонов
+out/
+*.png.tmp
+
+# Секреты и окружение
+.env
+*.env
+!.sample.env
+
+# Данные (реальные выгрузки не храним в гите)
+data/sample/*.csv
+!data/sample/.gitkeep
+
+# OS
+.DS_Store
