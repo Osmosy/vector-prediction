@@ -56,7 +56,7 @@
 | `docs/data-guide.md` | Какие данные собирать: период, шаг, ковариаты, частые ошибки |
 | `docs/user-guide.md` | Юзер-гайд: роли (люди/агенты), путь данных по шагам, каденция |
 | `docs/license-compliance.md` | Как разделены контуры по лицензии TimesFM |
-| `docs/vector-prediction-obsidian-neon.pptx` | [Скачать презентацию (PPTX, тема obsidian-neon, 5 слайдов)](docs/vector-prediction-obsidian-neon.pptx) · [PDF для просмотра/печати](docs/vector-prediction-obsidian-neon.pdf) |
+| `docs/vector-prediction-obsidian-neon.pptx` | [Скачать презентацию (PPTX, 13 слайдов, obsidian-neon)](docs/vector-prediction-obsidian-neon.pptx) · [PDF для просмотра/печати](docs/vector-prediction-obsidian-neon.pdf) |
 | `docs/vector-prediction-obsidian-neon.pdf` | PDF-версия презентации — для отправки/печати |
 | `docs/deck-prediction.py` | Исходник деки — пересборка: `deck_builder.py deck-prediction.py 01-obsidian-neon` |
 | `data/sample/` | Пример входных CSV (история + план промо) |
