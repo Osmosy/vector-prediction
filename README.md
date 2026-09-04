@@ -13,6 +13,8 @@
 **Гибридный прогнозный пайплайн: коммерческое прогнозирование на TimesFM 2.5 (Apache-2.0),
 исследовательский контур на TimesFM 3.0 — разделены по лицензии и по роли в процессе**
 
+[Документация](docs/) · [Юзер-гайд: роли и шаги](docs/user-guide.md) · [Гайд по данным](docs/data-guide.md) · [Лицензионные правила](docs/license-compliance.md)
+
 </div>
 
 ---
@@ -57,6 +59,10 @@
 | `data/sample/` | Пример входных CSV (история + план промо) |
 
 ## Быстрый старт
+
+> **Если вы не программист** — начните с [docs/user-guide.md](docs/user-guide.md):
+> кто что делает (люди и агенты), какие данные готовить, как читать прогноз.
+> Про сами данные: [docs/data-guide.md](docs/data-guide.md).
 
 ```bash
 uv venv ~/.venvs/timesfm && uv pip install --python ~/.venvs/timesfm/bin/python "timesfm[torch,xreg]"
