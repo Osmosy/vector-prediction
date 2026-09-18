@@ -1,0 +1,33 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  docs:
+    name: Документация, лицензионная граница и скрипты
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Полная проверка (включая preflight модели) требует timesfm/torch, поэтому
+      # в CI гоняем то, что не тянет зависимости: --help у скриптов и валидатор.
+      - name: Валидация документации и границ
+        run: python3 scripts/validate_docs.py
+
+      - name: Тесты валидатора
+        run: python3 tests/test_validate_docs.py
+
+      # Скрипты импортируют numpy/torch/timesfm на уровне модуля, поэтому без
+      # модели их не запустить: в CI проверяем синтаксис и аргументы, а не прогон.
+      - name: Синтаксис всех Python-файлов
+        run: python3 -m compileall -q scripts docs/deck-prediction.py
+
+      - name: Аргументы скриптов не разошлись с README
+        run: python3 tests/check_cli_contract.py
