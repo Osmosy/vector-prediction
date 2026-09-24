@@ -37,7 +37,7 @@
         └──► КОНТУР B — RESEARCH (TimesFM 3.0, non-commercial)
                • тест-прогон и бенчмарк (внутренний отчёт)
                • нативная мультисерийность: несколько целей +
-                 past-future ковариаты за один проход (~6x быстрее)
+                 past-future ковариаты за один проход (~5x быстрее)
                • НЕ попадает в производственные решения
 ```
 
@@ -79,31 +79,43 @@
 > Про сами данные: [docs/data-guide.md](docs/data-guide.md).
 
 ```bash
-uv venv ~/.venvs/timesfm && uv pip install --python ~/.venvs/timesfm/bin/python "timesfm[torch,xreg]"
+uv venv ~/.venvs/timesfm && uv pip install --python ~/.venvs/timesfm/bin/python "timesfm[torch,xreg]==3.0.1"
 source ~/.venvs/timesfm/bin/activate
 
-# прод-прогноз: клики на 14 дней с промо-календарём (колонки как в sample)
+# проверка точности: последние 14 дней отрезаны и спрогнозированы (колонки как в sample)
 python scripts/campaign_forecast.py --input data/sample/history.csv \
     --date-col date --value-cols clicks --covariate-col promo \
-    --holdout 14 --horizon 14 --outdir out
+    --holdout 14 --horizon 14 --outdir out/holdout
+
+# прод-прогноз: клики на 14 дней вперёд от конца истории с промо-календарём
+python scripts/campaign_forecast.py --input data/sample/history.csv \
+    --date-col date --value-cols clicks --covariate-col promo \
+    --horizon 14 --outdir out
 
 # тест-прогон 2.5 vs 3.0 (внутренний, не для прод-решений)
 python scripts/research_bench.py --input data/sample/history.csv --value-col clicks
 ```
 
-Выход `out/`: `<col>_forecast.csv` (прогноз + интервалы), `<col>_forecast.png`,
-`<col>_anomalies.csv` (OK/WARNING/CRITICAL), `metrics.json` (MAE/RMSE/MAPE).
+Выход `out/`: `<col>_forecast.csv` (прогноз + 60/80% интервалы; с `--holdout` —
+ещё колонка `actual`, с ковариатом — его план), `<col>_forecast.png`,
+`<col>_anomalies.csv` (последние 60 точек истории: OK/WARNING/CRITICAL),
+`metrics.json` (MAE/RMSE/MAPE и покрытие 80% интервала на holdout).
+С `--holdout N` прогноз строится от точки перед отрезанным хвостом: первые N дат
+`forecast.csv` совпадают с отрезанными днями (`--horizon` должен быть ≥ N).
 
 Колонки своего файла смотрите заголовком: у `data/sample/history.csv` это
 `date,clicks,conversions,promo`. Имена метрик передаются флагом `--value-cols`
 (через запятую), поэтому `sales` — только пример названия. Неверное имя колонки
-скрипт не проглатывает: `campaign_forecast.py` выходит с кодом 1 и печатает
-список доступных колонок, `research_bench.py` падает с `KeyError`.
+скрипт не проглатывает: `campaign_forecast.py` и `research_bench.py` выходят
+с кодом 1 и печатают список доступных колонок.
 
 ## Требования к данным
 
 - CSV: колонка даты + ≥1 метрика; минимум 32 точки, для внятного прогноза — от 100+
-- Ковариат-план (промо 0/1) на будущие дни: то, что известно заранее (акции, праздники, цены)
+- Ковариат-план (промо 0/1) на будущие дни: то, что известно заранее (акции, праздники, цены).
+  План — строки в конце того же CSV с датой и ковариатом, но с пустыми метриками:
+  `campaign_forecast.py` не считает их историей, а подаёт ковариат на горизонт.
+  Нет плана — будущие дни ковариата = 0 («акций не запланировано»)
 - Один шаг = одна строка, единицы одинаковые, числа с точкой
 - Полный человекоязычный гайд: `docs/data-guide.md`
 
@@ -118,16 +130,16 @@ python scripts/research_bench.py --input data/sample/history.csv --value-col cli
 
 | Движок | MAE | Время |
 |--------|-----|-------|
-| 2.5 базовый | 33.75 | 0.16 с |
+| 2.5 базовый | 33.75 | 0.15 с |
 | 2.5 + XReg | **31.42** | 1.29 с |
 | 3.0 базовый | 67.77 | 0.22 с |
-| 3.0 + ковариат | 40.55 | 0.23 с |
+| 3.0 + ковариат | 40.55 | 0.24 с |
 
 Результат прогона сохраняется в `out/research_bench.json`.
 
 Вывод: на этом ряде точнее **2.5 + XReg** (31.42 против 40.55 у 3.0) — прод-выбор
 оправдан не только лицензией, но и точностью. 3.0 выигрывает в скорости
-ковариатного прогноза (0.23 с против 1.29 с), поэтому он и удобен как быстрый
+ковариатного прогноза (0.24 с против 1.29 с), поэтому он и удобен как быстрый
 тест-прогон перед боевым расчётом на 2.5. RAM: ~1.5 ГБ у 2.5, ~2 ГБ у 3.0.
 
 Числа на других датасетах приводятся только вместе с указанием датасета и его
@@ -140,7 +152,7 @@ python scripts/research_bench.py --input data/sample/history.csv --value-col cli
 ```bash
 python3 scripts/validate_docs.py      # документация и лицензионные границы
 python3 tests/test_validate_docs.py   # тесты самих проверок
-python3 tests/check_cli_contract.py   # флаги в README против argparse
+python3 tests/check_cli_contract.py   # флаги в README и гайдах против argparse
 python3 -m compileall -q scripts docs/deck-prediction.py
 ```
 
@@ -155,6 +167,7 @@ python3 -m compileall -q scripts docs/deck-prediction.py
 | Ссылки на файлы | Упоминания `scripts/*`, `docs/*`, `data/*` без файла на диске |
 | Воспроизводимость чисел | Таблицу метрик в README без команды, которой её можно повторить |
 | Описанность скриптов | Новый скрипт в `scripts/`, не упомянутый в README |
+| Замеры = прогон | MAE и время в README, `docs/license-compliance.md` и деке против `out/research_bench.json`; колонтитулы PPTX |
 
 ## Для агентов
 

@@ -188,6 +188,80 @@ class DocumentedScriptsTest(unittest.TestCase):
             self.assertIn("new_tool.py", r.stdout)
 
 
+class DeckFooterTest(unittest.TestCase):
+    def _rewrite_slide(self, repo: Path, old: str, new: str) -> None:
+        pptx = repo / "docs" / "vector-prediction-obsidian-neon.pptx"
+        tmp = pptx.with_suffix(".tmp")
+        with zipfile.ZipFile(pptx) as src, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as dst:
+            for item in src.infolist():
+                data = src.read(item.filename)
+                if item.filename == "ppt/slides/slide9.xml":
+                    text = data.decode("utf-8")
+                    self.assertIn(old, text)
+                    data = text.replace(old, new).encode("utf-8")
+                dst.writestr(item, data)
+        tmp.replace(pptx)
+
+    def test_колонтитул_со_старым_числом_слайдов_ловится(self) -> None:
+        with RepoCopy() as repo:
+            self._rewrite_slide(repo, "<a:t>9 / 13</a:t>", "<a:t>9 / 12</a:t>")
+            r = validate(repo)
+            self.assertEqual(r.returncode, 1, r.stdout)
+            self.assertIn("9 / 12", r.stdout)
+
+    def test_колонтитул_чужой_деки_ловится(self) -> None:
+        with RepoCopy() as repo:
+            self._rewrite_slide(repo, "Vector Prediction · Hermes · Osmosy",
+                                "Vector Legal · Hermes Agent · Osmosy")
+            r = validate(repo)
+            self.assertEqual(r.returncode, 1, r.stdout)
+            self.assertIn("Vector Legal", r.stdout)
+
+    def test_невоспроизводимое_число_в_pptx_ловится(self) -> None:
+        with RepoCopy() as repo:
+            self._rewrite_slide(repo, "<a:t>40.55</a:t>", "<a:t>0.105</a:t>")
+            r = validate(repo)
+            self.assertEqual(r.returncode, 1, r.stdout)
+            self.assertIn("0.105", r.stdout)
+
+
+class BenchNumbersTest(unittest.TestCase):
+    def test_время_в_readme_сверяется_с_json(self) -> None:
+        with RepoCopy() as repo:
+            readme = repo / "README.md"
+            readme.write_text(
+                readme.read_text(encoding="utf-8").replace(
+                    "| 2.5 базовый | 33.75 | 0.15 с |", "| 2.5 базовый | 33.75 | 0.16 с |"
+                ),
+                encoding="utf-8",
+            )
+            r = validate(repo)
+            self.assertEqual(r.returncode, 1, r.stdout)
+            self.assertIn("0.16 с", r.stdout)
+
+    def test_mae_в_license_compliance_сверяется_с_json(self) -> None:
+        with RepoCopy() as repo:
+            doc = repo / "docs" / "license-compliance.md"
+            doc.write_text(
+                doc.read_text(encoding="utf-8").replace("| 40.55 |", "| 0.105 |"),
+                encoding="utf-8",
+            )
+            r = validate(repo)
+            self.assertEqual(r.returncode, 1, r.stdout)
+            self.assertIn("license-compliance", r.stdout)
+
+    def test_число_в_исходнике_деки_сверяется_с_json(self) -> None:
+        with RepoCopy() as repo:
+            deck = repo / "docs" / "deck-prediction.py"
+            deck.write_text(
+                deck.read_text(encoding="utf-8").replace("'31.42'", "'0.107'"),
+                encoding="utf-8",
+            )
+            r = validate(repo)
+            self.assertEqual(r.returncode, 1, r.stdout)
+            self.assertIn("0.107", r.stdout)
+
+
 class SampleConsistencyTest(unittest.TestCase):
     """Согласованность sample и README — та связка, что сломалась в реальности."""
 

@@ -12,6 +12,10 @@
 - числа бенчмарка (MAE 0.107 / 0.105) не воспроизводились ни на одном датасете
   в репозитории;
 - `run_pilot.py` не был описан нигде;
+- время в таблице замеров расходилось с `out/research_bench.json` (0.16 с против
+  0.147, 0.23 с против 0.241), а дека после исправления README так и осталась
+  с невоспроизводимыми MAE 0.107/0.105 и колонтитулом чужой деки
+  («Vector Legal», «9 / 12» при 13 слайдах);
 - прод-скрипт и скрипт тест-прогона должны быть разделены: 2.5 в проде, 3.0 в
   research (иначе лицензионный принцип держится только на честном слове).
 
@@ -153,7 +157,33 @@ def check_deck(repo_root: Path) -> list[str]:
             errors.append(
                 f"{where}: заявлено {claimed} слайдов, в PPTX их {real}"
             )
+
+    # Колонтитулы «N / M» внутри PPTX: M — реальное число слайдов, и никаких
+    # следов деки-донора (шаблон пришёл из vector-legal).
+    for n, text in _pptx_slide_texts(pptx):
+        for m in re.finditer(r"^(\d+) / (\d+)$", text, re.M):
+            if int(m.group(2)) != real:
+                errors.append(
+                    f"PPTX слайд {n}: колонтитул «{m.group(0)}», а слайдов {real}"
+                )
+        if "Vector Legal" in text:
+            errors.append(f"PPTX слайд {n}: колонтитул чужой деки «Vector Legal»")
     return errors
+
+
+def _pptx_slide_texts(pptx: Path) -> list[tuple[int, str]]:
+    """(номер слайда, текст): каждый <a:t> — отдельной строкой."""
+    import zipfile
+
+    out: list[tuple[int, str]] = []
+    with zipfile.ZipFile(pptx) as z:
+        for name in z.namelist():
+            m = re.match(r"ppt/slides/slide(\d+)\.xml$", name)
+            if m:
+                xml = z.read(name).decode("utf-8", errors="ignore")
+                runs = re.findall(r"<a:t>([^<]*)</a:t>", xml)
+                out.append((int(m.group(1)), "\n".join(runs)))
+    return sorted(out)
 
 
 # --- проверка 4: лицензионная граница в коде ----------------------------------
@@ -255,6 +285,81 @@ def check_scripts_documented(repo_root: Path) -> list[str]:
     return errors
 
 
+# --- проверка 8: замеры совпадают с out/research_bench.json --------------------
+
+BENCH_LABELS = {
+    "2.5 базовый": "2.5-base",
+    "2.5 + XReg": "2.5-xreg",
+    "3.0 базовый": "3.0-base",
+    "3.0 + ковариат": "3.0-cov",
+}
+
+
+def check_bench_numbers(repo_root: Path) -> list[str]:
+    """Таблицы замеров и дека повторяют числа из out/research_bench.json.
+
+    Дефект, из-за которого проверка появилась: время в README (0.16 с, 0.23 с)
+    не совпадало с сохранённым прогоном (0.147, 0.241), а дека продолжала
+    показывать MAE 0.107/0.105, которых нет ни в одном прогоне репозитория.
+    """
+    errors: list[str] = []
+    bench = repo_root / "out" / "research_bench.json"
+    if not bench.is_file():
+        return ["нет out/research_bench.json — числам замеров не с чем сверяться"]
+    runs = {r["engine"]: r for r in json.loads(read(bench))["runs"]}
+
+    for rel in ("README.md", "docs/license-compliance.md"):
+        path = repo_root / rel
+        if not path.is_file():
+            continue
+        seen = set()
+        for line in read(path).splitlines():
+            cells = [c.strip().strip("*") for c in line.strip().strip("|").split("|")]
+            if len(cells) != 3 or cells[0] not in BENCH_LABELS:
+                continue
+            engine = BENCH_LABELS[cells[0]]
+            seen.add(engine)
+            run = runs.get(engine)
+            if run is None:
+                errors.append(f"{rel}: строка «{cells[0]}», а в research_bench.json нет {engine}")
+                continue
+            want_mae, want_sec = f"{run['mae']:.2f}", f"{run['sec']:.2f} с"
+            if cells[1] != want_mae:
+                errors.append(f"{rel}: «{cells[0]}» MAE {cells[1]}, в research_bench.json {want_mae}")
+            if cells[2] != want_sec:
+                errors.append(f"{rel}: «{cells[0]}» время {cells[2]}, в research_bench.json {want_sec}")
+        if "Замеры" in read(path) or "История замеров" in read(path):
+            for engine in sorted(set(runs) - seen):
+                errors.append(f"{rel}: в таблице замеров нет строки для {engine}")
+
+    # Дека: каждое десятичное число в таблице бенчмарка — из прогона.
+    allowed = {f"{r['mae']:.2f}" for r in runs.values()} | {
+        f"{r['sec']:.2f}" for r in runs.values()}
+    deck_src = repo_root / "docs" / "deck-prediction.py"
+    if deck_src.is_file():
+        block = re.search(r"bench_rows=\[(.*?)\]", read(deck_src), re.S)
+        # «Apache-2.0» — версия лицензии, а не замер: дефис перед числом пропускаем
+        for num in re.findall(r"(?<![\w.-])\d+\.\d+(?![\w.])", block.group(1) if block else ""):
+            if num not in allowed:
+                errors.append(
+                    f"docs/deck-prediction.py: в bench_rows число {num}, "
+                    f"которого нет в out/research_bench.json"
+                )
+    pptx = repo_root / "docs" / "vector-prediction-obsidian-neon.pptx"
+    if pptx.is_file():
+        for n, text in _pptx_slide_texts(pptx):
+            if "бенчмарк" not in text.lower():
+                continue
+            for cell in text.splitlines():
+                m = re.fullmatch(r"~?(\d+\.\d+)(?: с)?(?: \(.*\))?", cell.strip())
+                if m and m.group(1) not in allowed:
+                    errors.append(
+                        f"PPTX слайд {n}: в таблице бенчмарка «{cell.strip()}», "
+                        f"такого числа нет в out/research_bench.json"
+                    )
+    return errors
+
+
 CHECKS = (
     ("лицензия кода", check_license),
     ("quickstart", check_quickstart),
@@ -263,6 +368,7 @@ CHECKS = (
     ("ссылки на файлы", check_referenced_files),
     ("воспроизводимость чисел", check_metric_numbers),
     ("описанность скриптов", check_scripts_documented),
+    ("замеры = research_bench.json", check_bench_numbers),
 )
 
 

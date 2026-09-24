@@ -62,7 +62,10 @@ date,promo,holiday,price_sosiski
    пропуски дат, смешение шт/кг.
 2. Типовые ошибки чинит сам и показывает дифф («было → стало»); спорное —
    возвращает специалисту вопросом, не молча.
-3. Склеивает history.csv (прошлое) + plan.csv (будущее) в формат для пайплайна.
+3. Склеивает history.csv (прошлое) + plan.csv (будущее) в формат для пайплайна:
+   строки плана дописываются в конец истории с пустыми ячейками продаж
+   (пример — в docs/data-guide.md). Без `--holdout` прогноз начинается ровно
+   с первой строки плана.
 4. Гонит preflight `scripts/check_system.py` — RAM/диск/веса на месте.
 
 Выдаёт: готовые CSV + короткий отчёт «что поправил, что спросил».
@@ -74,19 +77,29 @@ date,promo,holiday,price_sosiski
 
 ### Шаг 4. Агент-прогнозист — контур A (прод)
 
+Два прогона: сначала проверка качества на отрезанных 14 днях истории, затем
+боевой прогноз от конца истории на дни плана.
+
 ```bash
+# 1) holdout: метрики точности (прогноз покрывает отрезанные дни, не будущее)
 python scripts/campaign_forecast.py --input data/ready/history.csv \
     --date-col date --value-cols sosiski_kg,vetchina_kg \
-    --covariate-col promo --holdout 14 --horizon 14 --outdir out/
+    --covariate-col promo --holdout 14 --horizon 14 --outdir out/holdout/
+
+# 2) прогноз на 14 дней вперёд по плану акций
+python scripts/campaign_forecast.py --input data/ready/history.csv \
+    --date-col date --value-cols sosiski_kg,vetchina_kg \
+    --covariate-col promo --horizon 14 --outdir out/
 ```
 
 Что делает:
 - точечный прогноз + 60/80% интервалы по каждому продукту,
-- аномалии в истории (OK / WARNING / CRITICAL по квантилям),
+- аномалии в последних 60 днях истории (OK / WARNING / CRITICAL по квантилям),
 - метрики точности на holdout (MAE/RMSE/MAPE) — честная оценка качества,
 - PNG-график и CSV для людей.
 
-Выдаёт: out/*.csv + *.png + metrics.json.
+Выдаёт: out/*.csv + *.png + metrics.json (прогноз) и out/holdout/metrics.json
+(качество).
 
 ### Шаг 5. Агент-ревьюер — контроль качества
 
@@ -103,6 +116,8 @@ python scripts/campaign_forecast.py --input data/ready/history.csv \
 ### Шаг 6. Директор / планировщик — решение
 
 Получает: таблицу «день → forecast / cautious / optimistic» + график + метрики.
+В файле `<продукт>_forecast.csv` cautious — это колонка `lower_80`,
+optimistic — `upper_80`.
 
 Как читать:
 - **forecast** — план производства/закупки по умолчанию;
