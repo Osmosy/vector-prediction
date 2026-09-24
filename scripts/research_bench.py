@@ -11,11 +11,15 @@
   - 3.0 нативный ковариат (past_future_covariates)
 
 Метрики: MAE на holdout (последние --holdout строк исключаются из контекста),
-lift ковариата, тайминги.
+lift ковариата, тайминги. Оба движка получают один и тот же ковариат на
+горизонт — план акций из CSV (он известен заранее), иначе сравнение нечестное.
 
 Использование:
   python scripts/research_bench.py --input data/sample/history.csv \
-      --date-col date --value-col sales --covariate-col promo --holdout 14
+      --date-col date --value-col clicks --covariate-col promo --holdout 14
+
+  --covariate-col ""   — прогон без ковариата (только базовые движки)
+  VP_OUT=<каталог>     — куда писать research_bench.json (по умолчанию out/)
 """
 
 import argparse
@@ -30,7 +34,17 @@ import pandas as pd
 
 def load_series(path: str, date_col: str, value_col: str, cov_col: str | None,
                 holdout: int):
-    df = pd.read_csv(path, parse_dates=[date_col]).sort_values(date_col)
+    if not os.path.exists(path):
+        sys.exit(f"нет файла: {path}")
+    df = pd.read_csv(path)
+    missing = [c for c in (date_col, value_col, cov_col) if c and c not in df.columns]
+    if missing:
+        sys.exit(f"нет колонок {missing}; есть: {list(df.columns)}")
+    if not 0 < holdout <= len(df) - 32:
+        sys.exit(f"--holdout {holdout}: нужно 1..{len(df) - 32} "
+                 f"(в файле {len(df)} строк, контекст модели >= 32)")
+    df[date_col] = pd.to_datetime(df[date_col])
+    df = df.sort_values(date_col)
     values = df[value_col].to_numpy(np.float32)
     cov = df[cov_col].to_numpy(np.float32) if cov_col else None
     train_v, actual = values[:-holdout], values[-holdout:]
@@ -43,18 +57,19 @@ def mae(true, pred):
 
 
 def main():
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(description="Тест-прогон TimesFM 2.5 vs 3.0 (контур B)")
     ap.add_argument("--input", required=True)
     ap.add_argument("--date-col", default="date")
-    ap.add_argument("--value-col", default="sales")
-    ap.add_argument("--covariate-col", default="promo")
+    ap.add_argument("--value-col", default="clicks")
+    ap.add_argument("--covariate-col", default="promo",
+                    help='колонка ковариата; "" — без ковариата')
     ap.add_argument("--holdout", type=int, default=14)
     args = ap.parse_args()
 
-    import timesfm  # noqa: E402
-
     df, train_v, actual, train_c, actual_c = load_series(
         args.input, args.date_col, args.value_col, args.covariate_col, args.holdout)
+
+    import timesfm  # noqa: E402  — после проверки входа: ошибки CSV без загрузки torch
     T, H = len(train_v), len(actual)
     print(f"контекст {T} точек, горизонт {H}, ряд {args.value_col}")
 
@@ -80,8 +95,9 @@ def main():
             max_context=512, max_horizon=64, normalize_inputs=True,
             use_continuous_quantile_head=True, force_flip_invariance=True,
             infer_is_positive=True, fix_quantile_crossing=True, return_backcast=True))
-        cov_full = np.concatenate([train_c,
-                                   np.zeros(H, dtype=np.float32)]).astype(np.float32)
+        # будущее ковариата — план акций на holdout (известен заранее); тот же
+        # ряд получает и 3.0 ниже, чтобы сравнение было честным
+        cov_full = np.concatenate([train_c, actual_c]).astype(np.float32)
         t0 = time.time()
         p25x = m25c.forecast_with_covariates(
             inputs=[train_v], dynamic_numerical_covariates={"cov": [cov_full]},
@@ -103,7 +119,7 @@ def main():
 
     # --- 3.0 нативный ковариат ---
     if train_c is not None:
-        # будущие значения ковариата: факт holdout известен постфактум для оценки
+        # тот же план акций, что у 2.5 + XReg
         cov_full = np.concatenate([train_c, actual_c]).astype(np.float32)
         t0 = time.time()
         p30c = np.asarray(fc3.predict(context=train_v, horizon=H,

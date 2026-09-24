@@ -10,6 +10,8 @@
 `--value-cols sales` и `--value-col sales` при sample без колонки sales —
 пользователь копировал команду и получал ошибку.
 
+Проверяются README и гайды из `DOCS`: user-guide тоже даёт команды на копирование.
+
 Запуск:  python3 tests/check_cli_contract.py
 """
 
@@ -40,9 +42,16 @@ def declared_flags(script: Path) -> set[str]:
     return flags
 
 
+# Документы, из которых пользователь копирует команды.
+DOCS = ("README.md", "docs/user-guide.md", "docs/data-guide.md", "docs/license-compliance.md")
+
+
 def commands_in_readme() -> list[tuple[str, set[str]]]:
-    """Команды из README: (имя скрипта, использованные в ней --flags)."""
-    md = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    """Команды из README и гайдов: (имя скрипта, использованные в ней --flags)."""
+    md = "\n".join(
+        (REPO_ROOT / rel).read_text(encoding="utf-8")
+        for rel in DOCS if (REPO_ROOT / rel).is_file()
+    )
     found: list[tuple[str, set[str]]] = []
     for line in md.splitlines():
         m = re.search(r"(scripts/[a-z_]+\.py)", line)

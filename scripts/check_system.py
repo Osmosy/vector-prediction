@@ -7,7 +7,8 @@ installation so the agent never crashes a user's machine.
 
 Usage:
     python check_system.py
-    python check_system.py --model v2.5   # default
+    python check_system.py --model v2.5   # default (контур A, прод)
+    python check_system.py --model v3.0   # контур B, research_bench.py
     python check_system.py --model v2.0   # archived 500M model
     python check_system.py --model v1.0   # archived 200M model
     python check_system.py --json         # machine-readable output
@@ -17,11 +18,11 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import importlib.metadata
 import json
 import os
 import platform
 import shutil
-import struct
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -42,6 +43,16 @@ MODEL_PROFILES: dict[str, dict[str, Any]] = {
         "recommended_vram_gb": 4.0,
         "disk_gb": 2.0,  # model weights + overhead
         "hf_repo": "google/timesfm-2.5-200m-pytorch",
+    },
+    "v3.0": {
+        "name": "TimesFM 3.0 (330M, research only)",
+        "params": "330M",
+        "min_ram_gb": 3.0,
+        "recommended_ram_gb": 6.0,
+        "min_vram_gb": 2.0,
+        "recommended_vram_gb": 4.0,
+        "disk_gb": 3.0,
+        "hf_repo": "google/timesfm-3.0-pytorch",
     },
     "v2.0": {
         "name": "TimesFM 2.0 (500M)",
@@ -83,7 +94,7 @@ class CheckResult:
         return {"pass": "✅", "warn": "⚠️", "fail": "🛑"}.get(self.status, "❓")
 
     def __str__(self) -> str:
-        return f"[{self.name:<10}] {self.value:<40} {self.icon} {self.status.upper()}"
+        return f"[{self.name:<12}] {self.value:<40} {self.icon} {self.status.upper()}"
 
 
 @dataclass
@@ -167,8 +178,8 @@ def _get_total_ram_gb() -> float:
     except Exception:
         pass
 
-    # Fallback: use struct to estimate (unreliable)
-    return struct.calcsize("P") * 8 / 8  # placeholder
+    # Не удалось прочитать: 0.0 — «неизвестно», а не выдуманный объём.
+    return 0.0
 
 
 def _get_available_ram_gb() -> float:
@@ -229,6 +240,13 @@ def check_ram(profile: dict[str, Any]) -> CheckResult:
 
     value = f"Total: {total:.1f} GB | Available: {available:.1f} GB"
 
+    if total <= 0:
+        return CheckResult(
+            name="RAM",
+            status="warn",
+            detail="Could not determine system RAM on this platform — check manually.",
+            value="Unknown",
+        )
     if total < min_ram:
         return CheckResult(
             name="RAM",
@@ -360,7 +378,12 @@ def check_package(pkg_name: str, import_name: str | None = None) -> CheckResult:
     import_name = import_name or pkg_name
     try:
         mod = importlib.import_module(import_name)
-        version = getattr(mod, "__version__", "unknown")
+        version = getattr(mod, "__version__", None)
+        if version is None:  # timesfm 3.x не экспортирует __version__
+            try:
+                version = importlib.metadata.version(pkg_name)
+            except importlib.metadata.PackageNotFoundError:
+                version = "unknown"
         return CheckResult(
             name=pkg_name,
             status="pass",
@@ -374,6 +397,30 @@ def check_package(pkg_name: str, import_name: str | None = None) -> CheckResult:
             detail=f"{pkg_name} is not installed. Run: uv pip install {pkg_name}",
             value="Not installed",
         )
+
+
+def check_weights(profile: dict[str, Any]) -> CheckResult:
+    """Check whether model weights are already in the HuggingFace cache."""
+    hf_home = os.environ.get("HF_HOME", os.path.expanduser("~/.cache/huggingface"))
+    hub = Path(os.environ.get("HF_HUB_CACHE", Path(hf_home) / "hub"))
+    repo_dir = hub / ("models--" + profile["hf_repo"].replace("/", "--"))
+    snapshots = repo_dir / "snapshots"
+    if snapshots.is_dir() and any(snapshots.iterdir()):
+        return CheckResult(
+            name="Weights",
+            status="pass",
+            detail=f"{profile['hf_repo']} found in {hub}.",
+            value="Cached",
+        )
+    return CheckResult(
+        name="Weights",
+        status="warn",
+        detail=(
+            f"{profile['hf_repo']} is not cached yet — it will be downloaded from "
+            f"HuggingFace on first load (network access required)."
+        ),
+        value="Not cached",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -442,6 +489,10 @@ def run_checks(model_version: str = "v2.5") -> SystemReport:
     report.checks.append(check_python())
     report.checks.append(check_package("timesfm"))
     report.checks.append(check_package("torch"))
+    # XReg (ковариаты в контуре A) требует extra timesfm[xreg]: jax + scikit-learn
+    report.checks.append(check_package("jax"))
+    report.checks.append(check_package("scikit-learn", "sklearn"))
+    report.checks.append(check_weights(profile))
 
     # Determine mode
     gpu_check = next((c for c in report.checks if c.name == "GPU"), None)

@@ -6,6 +6,7 @@
 Проверяем: (1) скорость прогноза на CPU, (2) ловит ли модель промо-эффект
 через dynamic covariates, (3) аномалии по квантильным интервалам.
 """
+import os
 import time
 import numpy as np
 import timesfm
@@ -52,6 +53,9 @@ t_compile = time.time() - t0
 t0 = time.time()
 point, quant = model.forecast(horizon=H, inputs=[clicks])
 t_base = time.time() - t0
+# return_backcast=True (нужен для XReg): forecast отдаёт бэккаст + горизонт —
+# прогноз это последние H шагов
+point, quant = point[:, -H:], quant[:, -H:, :]
 
 # --- 2) прогноз с промо-ковариатом (динамическая категориальная) ---
 # ковариат должен покрывать контекст + горизонт
@@ -71,7 +75,7 @@ except Exception as e:
     has_xreg = False
 
 # --- отчёт ---
-print(f"\n=== Тайминги (CPU, 20 ядер) ===")
+print(f"\n=== Тайминги (CPU, ядер: {os.cpu_count()}) ===")
 print(f"load:    {t_load:6.1f}s")
 print(f"compile: {t_compile:6.1f}s")
 print(f"базовый прогноз {H} шагов: {t_base*1000:.0f} ms")
