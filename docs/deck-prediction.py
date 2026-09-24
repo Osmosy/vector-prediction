@@ -2,7 +2,8 @@
 # 13 слайдов: титул, введение, проблема, решение, данные, роли/путь, архитектура, лицензия,
 # бенчмарк, прогноз-выход, каденция, roadmap, финал (см. SLIDES в конце файла).
 import os
-OUT_FMT = os.path.expanduser('~/projects/vector-legal-decks15/vector-prediction-{theme}.pptx')
+# Дека живёт в docs/ рядом с исходником (VECTOR_DECK_OUTDIR перекрывает каталог).
+OUT_FMT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vector-prediction-{theme_short}.pptx')
 
 DATA = dict(
     kicker='ПРОГНОЗНЫЙ ДВИЖОК · OSMOSY VECTOR',
@@ -11,6 +12,7 @@ DATA = dict(
              'спрос, продажи, трафик кампаний',
     chips=[('2.5', 'прод · Apache'), ('3.0', 'research'), ('~5x', 'быстрее ковариаты')],
     github='github.com/Osmosy/vector-prediction',
+    # hero_art=('full', 'prediction_hero.png'),  # TODO: свой арт, см. docs/agent-tasks.md
     footer_tag='Osmosy · Hermes Agent · 2026',
     intro_lead='Zero-shot прогнозирование спроса, продаж и трафика кампаний без '
                'обучения под задачу — локально на CPU. Два контура, разделённые по лицензии.',
@@ -60,10 +62,11 @@ DATA = dict(
     ],
 
     # 05 · Роли и путь
-    wf_steps=[('Данные', 'Продажи выгружают историю,\nмаркетолог даёт план промо'),
-              ('Сборка', 'Агент-сборщик: чек-лист,\nсклейка CSV, preflight системы'),
-              ('Прогноз', 'Контур A: интервалы 60/80%,\nаномалии, метрики на holdout'),
-              ('Решение', 'Ревьюер допускает →\nдиректор планирует по цифрам')],
+    # карточки шагов узкие (~26 знаков в строке): переносы — явные
+    wf_steps=[('Данные', 'Продажи: история.\nМаркетолог: план промо'),
+              ('Сборка', 'Агент-сборщик: чек-лист,\nсклейка CSV, preflight'),
+              ('Прогноз', 'Контур A: интервалы\n60/80%, аномалии, holdout'),
+              ('Решение', 'Ревьюер допускает →\nдиректор планирует')],
     roles_panel='Разделение ответственности',
     roles_lines=[
         'Люди: полнота и правдивость данных, план акций, финальное решение по производству.',
@@ -142,9 +145,45 @@ from pptx.enum.text import PP_ALIGN
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.dml.color import RGBColor
 
-ASSETS = '/tmp/vl_assets'
+from engine import ASSETS  # VECTOR_DECK_ASSETS — общий каталог артов движка
+
+# Низ контента: колонтитул движка стоит на 7.14", панели не должны на него
+# заезжать (так было на 8 слайдах из 13).
+SAFE_BOTTOM = 7.02
+
 
 def _rgb(h): return RGBColor.from_string(h)
+
+
+def _wrap_lines(text, w, chars_per_in=11.6):
+    """Сколько строк займёт текст 11.5 pt Inter в боксе шириной w дюймов."""
+    return max(1, -(-len(text) // int(w * chars_per_in)))
+
+
+def _panel(slide, th, x, w, head, lines, y=None, bottom=SAFE_BOTTOM):
+    """wide_panel движка, но высота — по содержимому с учётом переносов.
+
+    У engine.wide_panel шаг строк фиксирован (0.30"), и перенесённая строка
+    налезает на следующую. Здесь абзац из k строк занимает 0.30 + 0.19*(k-1).
+    Без y панель прижимается низом к bottom. Возвращает низ панели.
+    """
+    tw = w - 0.7
+    items = [(ln[1:], True) if ln.startswith('!') else (ln, False) for ln in lines]
+    heights = [0.30 + 0.19 * (_wrap_lines(t, tw) - 1) for t, _ in items]
+    h = 0.68 + sum(heights) + 0.14
+    if y is None:
+        y = bottom - h
+    add_rect(slide, x, y, w, h, fill=th['surface'], line=th['card_line'],
+             line_w=1.0, radius=th['radius'])
+    add_rect(slide, x, y, 0.05, h, fill=th['accent'])
+    add_text(slide, x + 0.32, y + 0.24, tw, 0.35, head, size=14.5, bold=True,
+             font=th['f_body'], color=th['accent'])
+    yy = y + 0.68
+    for (txt, emph), hh in zip(items, heights):
+        add_text(slide, x + 0.32, yy, tw, hh, txt, size=11.5, font=th['f_body'],
+                 color=th['text'] if emph else th['muted'])
+        yy += hh
+    return y + h
 
 
 def _table(slide, th, x, y, col_ws, head, rows, row_h=0.46, head_h=0.42,
@@ -174,14 +213,17 @@ def _table(slide, th, x, y, col_ws, head, rows, row_h=0.46, head_h=0.42,
 
 
 def sl_title(slide, th, D):
-    if th.get('art'):
+    # Свой hero-арт проекта (D['hero_art'] = ('full'|'half', '<файл в ASSETS>'));
+    # без него — арт темы, а у 01-obsidian-neon это весы Vector Legal.
+    art = D.get('hero_art') or th.get('art')
+    if art:
         from engine import full_art, half_art
-        if th['art'][0] == 'full':
-            full_art(slide, th, th['art'][1], overlay_pct=26)
+        if art[0] == 'full':
+            full_art(slide, th, art[1], overlay_pct=26)
         else:
-            half_art(slide, th, th['art'][1])
+            half_art(slide, th, art[1])
     ta = th['title_align']
-    if ta == 'center' and not (th.get('art') and th['art'][0] == 'half'):
+    if ta == 'center' and not (art and art[0] == 'half'):
         add_rect(slide, (13.333-4.6)/2, 1.52, 4.6, 0.42, fill=th['surface'],
                  line=th['card_line'], radius=0.21, alpha=70)
         add_text(slide, (13.333-4.6)/2, 1.60, 4.6, 0.3, D['kicker'], size=10,
@@ -261,8 +303,8 @@ def sl_problem(slide, th, D):
     title_block(slide, th, 'Прогноз, которого обычно нет')
     cw, gap, m = 3.95, 0.25, 0.62
     for i, (head, lines) in enumerate(D['prob_cards']):
-        card(slide, th, m + i*(cw+gap), 2.15, cw, 3.1, head, lines)
-    wide_panel(slide, th, 0.62, 5.55, 12.1, 1.85, D['prob_panel'], D['prob_lines'])
+        card(slide, th, m + i*(cw+gap), 2.15, cw, 2.75, head, lines)
+    _panel(slide, th, 0.62, 12.1, D['prob_panel'], D['prob_lines'])
     footer(slide, th, 3)
 
 
@@ -272,8 +314,8 @@ def sl_solution(slide, th, D):
     title_block(slide, th, 'Foundation model вместо ручных таблиц')
     cw, gap, m = 3.95, 0.25, 0.62
     for i, (head, lines) in enumerate(D['sol_cards']):
-        card(slide, th, m + i*(cw+gap), 2.15, cw, 3.1, head, lines)
-    wide_panel(slide, th, 0.62, 5.55, 12.1, 1.85, D['sol_panel'], D['sol_lines'])
+        card(slide, th, m + i*(cw+gap), 2.15, cw, 2.75, head, lines)
+    _panel(slide, th, 0.62, 12.1, D['sol_panel'], D['sol_lines'])
     footer(slide, th, 4)
 
 
@@ -283,8 +325,8 @@ def sl_data(slide, th, D):
     title_block(slide, th, 'Что подготовить: три уровня')
     cw, gap, m = 3.95, 0.25, 0.62
     for i, (head, lines) in enumerate(D['data_cards']):
-        card(slide, th, m + i*(cw+gap), 2.15, cw, 3.1, head, lines)
-    wide_panel(slide, th, 0.62, 5.55, 12.1, 1.85, D['data_panel'], D['data_lines'])
+        card(slide, th, m + i*(cw+gap), 2.15, cw, 2.75, head, lines)
+    _panel(slide, th, 0.62, 12.1, D['data_panel'], D['data_lines'])
     footer(slide, th, 5)
 
 
@@ -306,10 +348,8 @@ def sl_arch(slide, th, D):
     kicker(slide, th, '06 · Архитектура')
     title_block(slide, th, 'Двухконтурная схема')
     y = 2.2
-    hs = [1.55, 1.55, 1.85]
-    for i, (head, lines) in enumerate(D['arch_items']):
-        wide_panel(slide, th, 0.62, y, 12.1, hs[i], head, [lines])
-        y += hs[i] + 0.18
+    for head, lines in D['arch_items']:
+        y = _panel(slide, th, 0.62, 12.1, head, [lines], y=y) + 0.18
     footer(slide, th, 7)
 
 
@@ -319,8 +359,8 @@ def sl_license(slide, th, D):
     title_block(slide, th, 'Non-commercial: что можно и нельзя')
     cw, gap, m = 3.95, 0.25, 0.62
     for i, (head, lines) in enumerate(D['lic_cards']):
-        card(slide, th, m + i*(cw+gap), 2.15, cw, 3.1, head, lines)
-    wide_panel(slide, th, 0.62, 5.55, 12.1, 1.7, D['lic_panel'], D['lic_lines'])
+        card(slide, th, m + i*(cw+gap), 2.15, cw, 3.0, head, lines)
+    _panel(slide, th, 0.62, 12.1, D['lic_panel'], D['lic_lines'])
     footer(slide, th, 8)
 
 
@@ -330,7 +370,7 @@ def sl_bench(slide, th, D):
     title_block(slide, th, 'Точность и скорость на живом прогоне')
     _table(slide, th, 0.62, 2.05, [3.9, 1.55, 1.55, 1.55, 1.55],
            D['bench_head'], D['bench_rows'], row_h=0.52, hl_col=2)
-    wide_panel(slide, th, 0.62, 5.30, 12.1, 1.95, 'Как читать', [
+    _panel(slide, th, 0.62, 12.1, 'Как читать', [
         '!Вывод: на ряде из репо точнее 2.5 + XReg (MAE 31.42 против 40.55 у 3.0 с ковариатом); 3.0 быстрее в ковариатном прогнозе (~5x).',
         'Прод-выбор 2.5 оправдан и лицензией, и точностью; 3.0 — быстрый тест-прогон перед боевым расчётом на 2.5.',
         D['bench_note'],
@@ -343,8 +383,8 @@ def sl_output(slide, th, D):
     kicker(slide, th, '09 · Результат')
     title_block(slide, th, 'Что получает директор')
     _table(slide, th, 0.62, 2.05, [2.2, 1.9, 1.9, 1.9, 1.6],
-           D['out_head'], D['out_rows'], row_h=0.52, hl_col=1)
-    wide_panel(slide, th, 0.62, 4.85, 12.1, 2.35, D['out_panel_head'], D['out_lines'])
+           D['out_head'], D['out_rows'], row_h=0.46, hl_col=1)
+    _panel(slide, th, 0.62, 12.1, D['out_panel_head'], D['out_lines'])
     footer(slide, th, 10)
 
 
@@ -353,8 +393,8 @@ def sl_cadence(slide, th, D):
     kicker(slide, th, '10 · Каденция')
     title_block(slide, th, 'Ритм работы прогнозного контура')
     _table(slide, th, 0.62, 2.05, [2.2, 5.6, 4.3],
-           ('Цикл', 'Что происходит', 'Кто'), D['cad_rows'], row_h=0.62)
-    wide_panel(slide, th, 0.62, 6.05, 12.1, 1.2, 'Правило контура B', [
+           ('Цикл', 'Что происходит', 'Кто'), D['cad_rows'], row_h=0.56)
+    _panel(slide, th, 0.62, 12.1, 'Правило контура B', [
         'research_bench.py не встраивается в прод-пайплайн: отдельный вход, отдельный выход.',
     ])
     footer(slide, th, 11)
@@ -364,10 +404,9 @@ def sl_roadmap(slide, th, D):
     bg_fill(slide, th)
     kicker(slide, th, '11 · Развитие')
     title_block(slide, th, 'Roadmap')
-    ys = [1.95, 3.15, 4.75]
-    hts = [1.0, 1.4, 1.1]
-    for (h, lines), y, hh in zip(D['roadmap_items'], ys, hts):
-        wide_panel(slide, th, 0.62, y, 12.1, hh, h, lines)
+    y = 2.05
+    for h, lines in D['roadmap_items']:
+        y = _panel(slide, th, 0.62, 12.1, h, lines, y=y) + 0.18
     footer(slide, th, 12)
 
 

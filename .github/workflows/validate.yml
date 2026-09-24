@@ -31,3 +31,10 @@ jobs:
 
       - name: Аргументы скриптов не разошлись с README
         run: python3 tests/check_cli_contract.py
+
+      # Логика скриптов — на заглушке timesfm (tests/fake_timesfm): без torch и весов
+      - name: Зависимости тестов скриптов
+        run: pip install numpy pandas matplotlib
+
+      - name: Тесты скриптов (holdout, план, аномалии, входные ошибки)
+        run: python3 tests/test_scripts.py
