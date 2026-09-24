@@ -64,11 +64,12 @@
 | `docs/data-guide.md` | Какие данные собирать: период, шаг, ковариаты, частые ошибки |
 | `docs/user-guide.md` | Юзер-гайд: роли (люди/агенты), путь данных по шагам, каденция |
 | `docs/license-compliance.md` | Как разделены контуры по лицензии TimesFM + принцип «тест на 3.0 → прогноз на 2.5» |
+| `docs/agent-tasks.md` | Открытые задачи для агента: бенчмарк на реальных весах, титульный арт, пересборка деки, диаграмма |
 | `docs/index.html` | Сайт доков для GitHub Pages: навигация по диаграмме, гайдам, презентации |
 | `docs/vector-prediction.architecture.html` | Интерактивная диаграмма пайплайна (исходник — `docs/diagram-prediction.json`) |
 | `docs/vector-prediction-obsidian-neon.pptx` | [Скачать презентацию (PPTX, 13 слайдов, obsidian-neon)](docs/vector-prediction-obsidian-neon.pptx) · [PDF для просмотра/печати](docs/vector-prediction-obsidian-neon.pdf) |
 | `docs/vector-prediction-obsidian-neon.pdf` | PDF-версия презентации — для отправки/печати |
-| `docs/deck-prediction.py` | Исходник деки (13 слайдов) — пересборка: `deck_builder.py deck-prediction.py 01-obsidian-neon` |
+| `docs/deck-prediction.py` | Исходник деки (13 слайдов) — пересборка движком [vector-deck-themes](https://github.com/Osmosy/vector-deck-themes): `python <vector-deck-themes>/deck_builder.py docs/deck-prediction.py 01-obsidian-neon` (PPTX пишется в `docs/`; арты — в `VECTOR_DECK_ASSETS`, PDF — `soffice --convert-to pdf`) |
 | `data/sample/history.csv` | Пример входных CSV: `date,clicks,conversions,promo`, 120 дней |
 | `out/` | Артефакты прогонов (`metrics.json`, `research_bench.json`, графики) |
 
@@ -153,6 +154,7 @@ python scripts/research_bench.py --input data/sample/history.csv --value-col cli
 python3 scripts/validate_docs.py      # документация и лицензионные границы
 python3 tests/test_validate_docs.py   # тесты самих проверок
 python3 tests/check_cli_contract.py   # флаги в README и гайдах против argparse
+python3 tests/test_scripts.py         # логика скриптов на заглушке timesfm (нужны numpy/pandas/matplotlib)
 python3 -m compileall -q scripts docs/deck-prediction.py
 ```
 
@@ -167,7 +169,8 @@ python3 -m compileall -q scripts docs/deck-prediction.py
 | Ссылки на файлы | Упоминания `scripts/*`, `docs/*`, `data/*` без файла на диске |
 | Воспроизводимость чисел | Таблицу метрик в README без команды, которой её можно повторить |
 | Описанность скриптов | Новый скрипт в `scripts/`, не упомянутый в README |
-| Замеры = прогон | MAE и время в README, `docs/license-compliance.md` и деке против `out/research_bench.json`; колонтитулы PPTX |
+| Замеры = прогон | MAE и время в README, `docs/license-compliance.md` и деке против `out/research_bench.json` |
+| Колонтитулы деки | «N / M» против числа слайдов, чужой бренд, фигуры поверх колонтитула |
 
 ## Для агентов
 

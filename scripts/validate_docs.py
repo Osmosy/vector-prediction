@@ -168,6 +168,46 @@ def check_deck(repo_root: Path) -> list[str]:
                 )
         if "Vector Legal" in text:
             errors.append(f"PPTX слайд {n}: колонтитул чужой деки «Vector Legal»")
+    errors.extend(_footer_overlaps(pptx))
+    return errors
+
+
+EMU = 914400
+_SHAPE_RE = re.compile(
+    r'<a:off x="(-?\d+)" y="(-?\d+)"/><a:ext cx="(\d+)" cy="(\d+)"/>(.*?)</p:(?:sp|pic)>',
+    re.S)
+
+
+def _footer_overlaps(pptx: Path) -> list[str]:
+    """Фигуры, которые заходят на колонтитул слайда.
+
+    Дефект, из-за которого проверка появилась: панели «Как читать» и соседние
+    уходили до 7.25–7.51", а колонтитул стоит на 7.14" — номер слайда закрывала
+    акцентная полоса панели на 8 слайдах из 13.
+    """
+    import zipfile
+
+    errors: list[str] = []
+    with zipfile.ZipFile(pptx) as z:
+        for name in sorted(z.namelist()):
+            m = re.match(r"ppt/slides/slide(\d+)\.xml$", name)
+            if not m:
+                continue
+            shapes = []
+            for x, y, cx, cy, body in _SHAPE_RE.findall(z.read(name).decode("utf-8", errors="ignore")):
+                text = "".join(re.findall(r"<a:t>([^<]*)</a:t>", body))
+                shapes.append((int(x), int(y), int(cx), int(cy), text))
+            feet = [s for s in shapes if re.fullmatch(r"\d+ / \d+", s[4]) or "Hermes" in s[4] and s[1] > 7 * EMU]
+            for fx, fy, fcx, fcy, ftext in feet:
+                for x, y, cx, cy, text in shapes:
+                    if (x, y, cx, cy, text) in feet or cx >= 13 * EMU:  # колонтитулы и фон во всю ширину
+                        continue
+                    if y + cy > fy and y < fy + fcy and x < fx + fcx and x + cx > fx:
+                        what = f"«{text[:30]}»" if text else "фигура"
+                        errors.append(
+                            f"PPTX слайд {m.group(1)}: {what} заходит на колонтитул «{ftext}» "
+                            f"(низ {(y + cy) / EMU:.2f}\", колонтитул с {fy / EMU:.2f}\")"
+                        )
     return errors
 
 

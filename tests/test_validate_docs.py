@@ -211,11 +211,20 @@ class DeckFooterTest(unittest.TestCase):
 
     def test_колонтитул_чужой_деки_ловится(self) -> None:
         with RepoCopy() as repo:
-            self._rewrite_slide(repo, "Vector Prediction · Hermes · Osmosy",
+            self._rewrite_slide(repo, "Vector Prediction · Hermes Agent · Osmosy",
                                 "Vector Legal · Hermes Agent · Osmosy")
             r = validate(repo)
             self.assertEqual(r.returncode, 1, r.stdout)
             self.assertIn("Vector Legal", r.stdout)
+
+    def test_панель_на_колонтитуле_ловится(self) -> None:
+        with RepoCopy() as repo:
+            # панель «Как читать» слайда 9 вытягивается до 7.40" — на колонтитул
+            self._rewrite_slide(repo, 'y="4846319"/><a:ext cx="11064240" cy="1572768"',
+                                'y="4846319"/><a:ext cx="11064240" cy="1920240"')
+            r = validate(repo)
+            self.assertEqual(r.returncode, 1, r.stdout)
+            self.assertIn("заходит на колонтитул", r.stdout)
 
     def test_невоспроизводимое_число_в_pptx_ловится(self) -> None:
         with RepoCopy() as repo:
