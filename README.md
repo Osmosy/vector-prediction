@@ -64,7 +64,7 @@
 | `docs/data-guide.md` | Какие данные собирать: период, шаг, ковариаты, частые ошибки |
 | `docs/user-guide.md` | Юзер-гайд: роли (люди/агенты), путь данных по шагам, каденция |
 | `docs/license-compliance.md` | Как разделены контуры по лицензии TimesFM + принцип «тест на 3.0 → прогноз на 2.5» |
-| `docs/agent-tasks.md` | Открытые задачи для агента: бенчмарк на реальных весах, титульный арт, пересборка деки, диаграмма |
+| `docs/agent-tasks.md` | Передача агенту: что сделано на аудите 24.09.2026 и открытые задачи (бенчмарк и прод-скрипт на реальных весах, арт и пересборка деки, диаграмма) |
 | `docs/index.html` | Сайт доков для GitHub Pages: навигация по диаграмме, гайдам, презентации |
 | `docs/vector-prediction.architecture.html` | Интерактивная диаграмма пайплайна (исходник — `docs/diagram-prediction.json`) |
 | `docs/vector-prediction-obsidian-neon.pptx` | [Скачать презентацию (PPTX, 13 слайдов, obsidian-neon)](docs/vector-prediction-obsidian-neon.pptx) · [PDF для просмотра/печати](docs/vector-prediction-obsidian-neon.pdf) |
