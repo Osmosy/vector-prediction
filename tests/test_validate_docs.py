@@ -207,6 +207,23 @@ class MetricsTest(unittest.TestCase):
             self.assertEqual(r.returncode, 1, r.stdout)
             self.assertIn("Замеры", r.stdout)
 
+    def test_время_в_тексте_вне_таблицы_ловится(self) -> None:
+        """Дефект аудита 27.09.2026: под таблицей в README осталось «0.24 с
+        против 1.29 с», хотя в таблице уже 0.22 и 1.30 — валидатор сверял
+        только строки-ячейки таблиц."""
+        for rel in ("README.md", "docs/license-compliance.md"):
+            with RepoCopy() as repo:
+                path = repo / rel
+                text = path.read_text(encoding="utf-8")
+                # Подменяем именно текстовое упоминание (строка абзаца, не таблица).
+                old = "ковариатного прогноза (0.22 с против 1.30 с)"
+                self.assertIn(old, text, rel)
+                path.write_text(text.replace(old, "ковариатного прогноза (0.24 с против 1.29 с)"),
+                                encoding="utf-8")
+                r = validate(repo)
+                self.assertEqual(r.returncode, 1, f"{rel}: {r.stdout}")
+                self.assertIn("в тексте время 0.24", r.stdout)
+
 
 class DocumentedScriptsTest(unittest.TestCase):
     def test_неописанный_скрипт_ловится(self) -> None:

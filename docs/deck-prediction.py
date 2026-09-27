@@ -238,8 +238,11 @@ def sl_title(slide, th, D):
         add_rect(slide, 4.87, 5.62, 3.6, 0.52, fill=th['accent'], radius=0.26)
         add_text(slide, 4.87, 5.74, 3.6, 0.3, D['github'], size=11.5, bold=True,
                  font=th['f_mono'], color='FFFFFF', align=PP_ALIGN.CENTER)
-        add_text(slide, 4.17, 6.90, 5.0, 0.26, D['footer_tag'], size=9.5,
-                 font=th['f_mono'], color=th['muted'], align=PP_ALIGN.CENTER)
+        # Подпись читаемым цветом и с подложкой поверх арта (задача C1): при
+        # color=th['muted'] строка «Osmosy · Hermes Agent · 2026» ложилась прямо
+        # на hero-арт и почти не читалась.
+        from engine import signature_line
+        signature_line(slide, th, 4.17, 6.90, 5.0, align=PP_ALIGN.CENTER)
     else:
         add_rect(slide, 0.62, 1.30, 0.05, 2.2, fill=th['accent'])
         add_text(slide, 0.92, 1.30, 6.5, 0.3, D['kicker'], size=10.5, bold=True,
@@ -256,8 +259,9 @@ def sl_title(slide, th, D):
                      color=th['muted'], spacing=100)
         add_text(slide, 0.92, 5.15, 6.0, 0.3, D['github'], size=12.5, bold=True,
                  font=th['f_mono'], color=th['accent'])
-        add_text(slide, 0.92, 6.0, 6.0, 0.26, D['footer_tag'], size=9.5,
-                 font=th['f_mono'], color=th['muted'])
+        # Подпись читаемым цветом (задача C1) — как на centered-титуле.
+        from engine import signature_line
+        signature_line(slide, th, 0.92, 6.0, 6.0)
     slide.shapes.add_picture(f'{ASSETS}/vector_ray_t.png',
                              Inches(12.20), Inches(0.30), width=Inches(0.9))
 
