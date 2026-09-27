@@ -347,6 +347,8 @@ def check_bench_numbers(repo_root: Path) -> list[str]:
     if not bench.is_file():
         return ["нет out/research_bench.json — числам замеров не с чем сверяться"]
     runs = {r["engine"]: r for r in json.loads(read(bench))["runs"]}
+    allowed_mae = {f"{r['mae']:.2f}" for r in runs.values()}
+    allowed_sec = {f"{r['sec']:.2f}" for r in runs.values()}
 
     for rel in ("README.md", "docs/license-compliance.md"):
         path = repo_root / rel
@@ -372,9 +374,26 @@ def check_bench_numbers(repo_root: Path) -> list[str]:
             for engine in sorted(set(runs) - seen):
                 errors.append(f"{rel}: в таблице замеров нет строки для {engine}")
 
+    # Числа замеров в ТЕКСТЕ (вне таблиц) — та же сверка, что и для таблиц.
+    # Дефект: в README и docs/license-compliance.md под таблицами осталось
+    # «0.24 с против 1.29 с», тогда как в таблицах уже 0.22 и 1.30 — прежняя
+    # проверка видела только строки-ячейки таблиц и молчала.
+    for rel in ("README.md", "docs/license-compliance.md"):
+        path = repo_root / rel
+        if not path.is_file():
+            continue
+        for n, line in enumerate(read(path).splitlines(), 1):
+            if line.strip().startswith("|"):
+                continue                      # таблицы проверены выше
+            for num in re.findall(r"(?<![\w.-])(\d+\.\d+)\s*с(?![.\w])", line):
+                if num not in allowed_sec:
+                    errors.append(
+                        f"{rel}:{n}: в тексте время {num} с, которого нет "
+                        f"в out/research_bench.json"
+                    )
+
     # Дека: каждое десятичное число в таблице бенчмарка — из прогона.
-    allowed = {f"{r['mae']:.2f}" for r in runs.values()} | {
-        f"{r['sec']:.2f}" for r in runs.values()}
+    allowed = allowed_mae | allowed_sec
     deck_src = repo_root / "docs" / "deck-prediction.py"
     if deck_src.is_file():
         block = re.search(r"bench_rows=\[(.*?)\]", read(deck_src), re.S)
