@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import sys
@@ -49,6 +50,34 @@ class ValidDocsTest(unittest.TestCase):
             r = validate(repo)
             self.assertEqual(r.returncode, 0, r.stdout)
             self.assertIn("ошибок 0", r.stdout)
+
+
+class DiagramEdgesTest(unittest.TestCase):
+    def test_ребро_только_в_json_ловится(self) -> None:
+        """Ребро есть в JSON, но не в собранном HTML — значит, не пересобрали."""
+        with RepoCopy() as repo:
+            src = repo / "docs" / "diagram-prediction.json"
+            data = json.loads(src.read_text(encoding="utf-8"))
+            data["connections"].append({"from": "out", "to": "sales", "label": "тест"})
+            src.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+            r = validate(repo)
+            self.assertEqual(r.returncode, 1, r.stdout)
+            self.assertIn("нет в HTML", r.stdout)
+
+    def test_ребро_только_в_html_ловится(self) -> None:
+        """HTML правлен руками: ребро в нём есть, а в JSON-исходнике — нет."""
+        with RepoCopy() as repo:
+            html = repo / "docs" / "vector-prediction.architecture.html"
+            text = html.read_text(encoding="utf-8")
+            anchor = 'data-edge-from="prod" data-edge-to="out"'
+            self.assertIn(anchor, text, "в HTML нет ожидаемого ребра prod→out")
+            html.write_text(
+                text.replace(anchor, 'data-edge-from="prod" data-edge-to="sales"', 1),
+                encoding="utf-8",
+            )
+            r = validate(repo)
+            self.assertEqual(r.returncode, 1, r.stdout)
+            self.assertIn("нет в JSON", r.stdout)
 
 
 class LicenseTest(unittest.TestCase):
@@ -237,16 +266,21 @@ class DeckFooterTest(unittest.TestCase):
 class BenchNumbersTest(unittest.TestCase):
     def test_время_в_readme_сверяется_с_json(self) -> None:
         with RepoCopy() as repo:
+            # Фикстура берётся из самого JSON, а не из литерала: при новом
+            # прогоне (задача 2.1) тест не должен гнить из-за смены времени.
+            bench = json.loads((repo / "out" / "research_bench.json").read_text(encoding="utf-8"))
+            run = {r["engine"]: r for r in bench["runs"]}["2.5-base"]
+            good = f"| 2.5 базовый | {run['mae']:.2f} | {run['sec']:.2f} с |"
             readme = repo / "README.md"
+            text = readme.read_text(encoding="utf-8")
+            self.assertIn(good, text, f"в README нет строки {good!r}")
             readme.write_text(
-                readme.read_text(encoding="utf-8").replace(
-                    "| 2.5 базовый | 33.75 | 0.15 с |", "| 2.5 базовый | 33.75 | 0.16 с |"
-                ),
+                text.replace(good, f"| 2.5 базовый | {run['mae']:.2f} | {run['sec'] + 0.01:.2f} с |"),
                 encoding="utf-8",
             )
             r = validate(repo)
             self.assertEqual(r.returncode, 1, r.stdout)
-            self.assertIn("0.16 с", r.stdout)
+            self.assertIn(f"{run['sec'] + 0.01:.2f} с", r.stdout)
 
     def test_mae_в_license_compliance_сверяется_с_json(self) -> None:
         with RepoCopy() as repo:

@@ -10,7 +10,7 @@
 коммитом — все проверки из README, раздел «Проверки перед коммитом»:
 
 ```bash
-python3 scripts/validate_docs.py      # документация, лицензионные границы, дека
+python3 scripts/validate_docs.py      # документация, лицензионные границы, диаграмма
 python3 tests/test_validate_docs.py   # тесты валидатора
 python3 tests/check_cli_contract.py   # флаги в README и гайдах против argparse
 python3 tests/test_scripts.py         # логика скриптов на заглушке timesfm
@@ -123,14 +123,16 @@ python3 -m compileall -q scripts docs/deck-prediction.py
 
 ### 1.4. Проверки vector-prediction (CI: `.github/workflows/validate.yml`)
 
-`scripts/validate_docs.py` — 8 проверок. Новые или расширенные:
+`scripts/validate_docs.py` — 9 проверок. Новые или расширенные:
 
 - «замеры = research_bench.json»: MAE и время в README,
   `license-compliance.md`, `bench_rows` деки и таблице PPTX;
 - колонтитулы PPTX: «N / M» против числа слайдов, запрет «Vector Legal»,
-  фигуры поверх колонтитула (на прежней деке — 24 ошибки).
+  фигуры поверх колонтитула (на прежней деке — 24 ошибки);
+- «диаграмма = connections JSON»: рёбра собранного HTML против исходника
+  `docs/diagram-prediction.json` (появилась на задаче 2.5).
 
-`tests/test_validate_docs.py` — 19 тестов (каждая проверка падает на своём
+`tests/test_validate_docs.py` — 21 тест (каждая проверка падает на своём
 дефекте). `tests/check_cli_contract.py` сверяет флаги и в гайдах.
 `tests/test_scripts.py` + `tests/fake_timesfm/` — 9 тестов логики скриптов на
 заглушке с контрактом timesfm 3.0.1 (бэккаст выровнен по концу контекста, XReg

@@ -96,7 +96,8 @@ if has_xreg:
     xreg_avg_norm = np.mean(np.delete(point_x[0], lift_days))
     print(f"среднее в дни промо:     {xreg_avg_promo:7.0f}")
     print(f"среднее вне промо:       {xreg_avg_norm:7.0f}")
-    print(f"подъём в промо-дни:      {(xreg_avg_promo/xreg_avg_norm-1)*100:+.1f}% (ожидалось ~+35-40%)")
+    print(f"подъём в промо-дни:      {(xreg_avg_promo/xreg_avg_norm-1)*100:+.1f}% "
+          f"(синтетика задаёт +40% к тренду; модель добавляет своё, поэтому факт выше)")
     print(f"базовый (без ковариат) в те же дни: {np.mean(point[0][lift_days]):7.0f} — промо НЕ видит")
 
 np.save("/tmp/timesfm_pilot_point.npy", point)

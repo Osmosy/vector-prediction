@@ -5043,9 +5043,10 @@
         <path data-edge-from="data" data-edge-to="prod" data-edge-label="CSV" data-edge-key="3" data-composition-points="428,200;428,176;508,176;508,110;532,110" d="M 428 200 L 428 184 Q 428 176 436 176 L 500 176 Q 508 176 508 168 L 508 118 Q 508 110 516 110 L 532 110" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="data" data-edge-to="research" data-edge-label="CSV" data-edge-key="4" data-composition-points="428,260;428,284;508,284;508,350;532,350" d="M 428 260 L 428 276 Q 428 284 436 284 L 500 284 Q 508 284 508 292 L 508 342 Q 508 350 516 350 L 532 350" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="research" data-edge-to="reviewer" data-edge-label="сравнение моделей" data-edge-key="5" data-composition-points="652,350;756,350;756,260" d="M 652 350 L 748 350 Q 756 350 756 342 L 756 260" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="prod" data-edge-to="out" data-edge-label="прогноз" data-edge-key="6" data-composition-points="652,110;860,110" d="M 652 110 L 860 110" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="out" data-edge-to="director" data-edge-label="отчёт" data-edge-key="7" data-composition-points="980,110;1024,110" d="M 980 110 L 1024 110" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="reviewer" data-edge-to="director" data-edge-label="допуск" data-edge-key="8" data-composition-points="756,200;756,170;1084,170;1084,140" d="M 756 200 L 756 178 Q 756 170 764 170 L 1076 170 Q 1084 170 1084 162 L 1084 140" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="prod" data-edge-to="out" data-edge-label="прогноз" data-edge-key="6" data-composition-points="652,103;860,103" d="M 652 103 L 860 103" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="out" data-edge-to="reviewer" data-edge-label="метрики" data-edge-key="7" data-composition-points="860,117;749,117;749,200" d="M 860 117 L 757 117 Q 749 117 749 125 L 749 200" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="reviewer" data-edge-to="director" data-edge-label="допуск" data-edge-key="8" data-composition-points="763,200;763,170;1084,170;1084,140" d="M 763 200 L 763 178 Q 763 170 771 170 L 1076 170 Q 1084 170 1084 162 L 1084 140" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="out" data-edge-to="director" data-edge-label="после допуска" data-edge-key="9" data-composition-points="980,110;1024,110" d="M 980 110 L 1024 110" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
 
         <!-- Components -->
         <g id="node-sales" data-node-id="sales" data-node-label="Продажи" tabindex="0" role="button" aria-label="Focus Продажи, история продаж, Люди" aria-pressed="false" data-node-kind="external" data-node-sublabel="история продаж" data-node-context="Люди">
@@ -5181,16 +5182,20 @@
           <text x="756" y="295" class="t-messagebus" font-size="8" text-anchor="middle">сравнение моделей</text>
         </g>
         <g data-detail="context" data-edge-from="prod" data-edge-to="out" data-edge-label="прогноз" data-edge-key="6">
-          <rect x="734.2" y="90" width="43.6" height="14" rx="3" class="c-mask"/>
-          <text x="756" y="100" class="t-muted" font-size="8" text-anchor="middle">прогноз</text>
+          <rect x="734.2" y="83" width="43.6" height="14" rx="3" class="c-mask"/>
+          <text x="756" y="93" class="t-muted" font-size="8" text-anchor="middle">прогноз</text>
         </g>
-        <g data-detail="context" data-edge-from="out" data-edge-to="director" data-edge-label="отчёт" data-edge-key="7">
-          <rect x="985" y="90" width="34" height="14" rx="3" class="c-mask"/>
-          <text x="1002" y="100" class="t-muted" font-size="8" text-anchor="middle">отчёт</text>
+        <g data-detail="context" data-edge-from="out" data-edge-to="reviewer" data-edge-label="метрики" data-edge-key="7">
+          <rect x="727.2" y="138.5" width="43.6" height="14" rx="3" class="c-mask"/>
+          <text x="749" y="148.5" class="t-muted" font-size="8" text-anchor="middle">метрики</text>
         </g>
         <g data-detail="context" data-edge-from="reviewer" data-edge-to="director" data-edge-label="допуск" data-edge-key="8">
-          <rect x="900.6" y="150" width="38.8" height="14" rx="3" class="c-mask"/>
-          <text x="920" y="160" class="t-muted" font-size="8" text-anchor="middle">допуск</text>
+          <rect x="904.1" y="150" width="38.8" height="14" rx="3" class="c-mask"/>
+          <text x="923.5" y="160" class="t-muted" font-size="8" text-anchor="middle">допуск</text>
+        </g>
+        <g data-detail="context" data-edge-from="out" data-edge-to="director" data-edge-label="после допуска" data-edge-key="9">
+          <rect x="965.8" y="66" width="72.4" height="14" rx="3" class="c-mask"/>
+          <text x="1002" y="76" class="t-muted" font-size="8" text-anchor="middle">после допуска</text>
         </g>
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->
