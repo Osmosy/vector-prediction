@@ -294,7 +294,7 @@ python3 -m compileall -q scripts docs/deck-prediction.py
 4. Открыть страницу (GitHub Pages / локально): новое ребро не пересекает подписи.
 5. По желанию: проверка в `validate_docs.py` «рёбра HTML = connections JSON» с тестом.
 
-### 2.6. [P3] Кто ещё пользуется движком дек — ОТКРЫТО, дефект найден 27.09.2026
+### 2.6. [P3] Кто ещё пользуется движком дек — ✅ ВЫПОЛНЕНО 27.09.2026
 
 **Найдено при аудите 27.09.2026 (проверка `check_footers` по всем декам Osmosy):**
 в `vector-deck-themes` закоммичены `vector-music-02-academic-light.pptx` и
@@ -304,8 +304,12 @@ python3 -m compileall -q scripts docs/deck-prediction.py
 артефакты в репо устарели. Остальные 15 дек (vector-legal) и
 `vector-marketing-01` — чистые.
 
-**Остаётся:** пересобрать музыкальные деки и закоммитить; проверить, есть ли
-деки с тем же дефектом в других репо Osmosy.
+**Исправлено:** музыкальные деки пересобраны и закоммичены — колонтитул «4 / 4»
+и бренд «Vector Music · Hermes Agent · Osmosy» (PR Osmosy/vector-deck-themes#9).
+Другие репо Osmosy с pptx проверены тем же `check_footers`:
+vector-prediction (1) и vector-marketing (1) — чистые, vector-legal (1) — эталон v2,
+не пересобирается, vector-health (6) — издательские шаблоны PRISMA, движка не
+касаются.
 
 **Зачем.** `deck_builder.py` теперь сам выставляет колонтитулы и берёт движок
 рядом с собой. Деки других репо экосистемы, собранные старым билдером, могут
