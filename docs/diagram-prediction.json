@@ -39,7 +39,8 @@
     { "from": "data", "to": "research", "label": "CSV", "variant": "dashed", "fromSide": "bottom", "toSide": "left" },
     { "from": "research", "to": "reviewer", "label": "сравнение моделей", "variant": "dashed", "fromSide": "right", "toSide": "bottom" },
     { "from": "prod", "to": "out", "label": "прогноз" },
-    { "from": "out", "to": "director", "label": "отчёт" },
-    { "from": "reviewer", "to": "director", "label": "допуск", "fromSide": "top", "toSide": "bottom" }
+    { "from": "out", "to": "reviewer", "label": "метрики", "fromSide": "left", "toSide": "top" },
+    { "from": "reviewer", "to": "director", "label": "допуск", "fromSide": "top", "toSide": "bottom" },
+    { "from": "out", "to": "director", "label": "после допуска", "labelDy": -24 }
   ]
 }

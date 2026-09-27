@@ -7,22 +7,22 @@
     {
       "engine": "2.5-base",
       "mae": 33.74515914916992,
-      "sec": 0.147
+      "sec": 0.165
     },
     {
       "engine": "2.5-xreg",
       "mae": 31.42251968383789,
-      "sec": 1.293
+      "sec": 1.301
     },
     {
       "engine": "3.0-base",
       "mae": 67.76960754394531,
-      "sec": 0.216
+      "sec": 0.202
     },
     {
       "engine": "3.0-cov",
       "mae": 40.5484619140625,
-      "sec": 0.241
+      "sec": 0.217
     }
   ],
   "compliance": "Kontur B (research): results for internal model comparison only — NOT for production decisions."

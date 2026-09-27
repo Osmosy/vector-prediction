@@ -400,6 +400,37 @@ def check_bench_numbers(repo_root: Path) -> list[str]:
     return errors
 
 
+def check_diagram_edges(repo_root: Path) -> list[str]:
+    """Рёбра в собранной диаграмме совпадают с connections в JSON-исходнике.
+
+    Дефект, из которого проверка выросла: ребро out→reviewer («метрики») было
+    в гайде, но его не было ни в JSON, ни в HTML — диаграмма молча показывала
+    прогноз идущим в обход ревьюера. HTML правят не руками, а archify deliver,
+    поэтому расхождение — это забытая пересборка или правка только одной стороны.
+    """
+    errors: list[str] = []
+    src = repo_root / "docs" / "diagram-prediction.json"
+    html = repo_root / "docs" / "vector-prediction.architecture.html"
+    if not src.is_file() or not html.is_file():
+        return errors
+    data = json.loads(read(src))
+    want = sorted({(c["from"], c["to"]) for c in data.get("connections", [])})
+    body = read(html)
+    got = sorted(set(re.findall(r'data-edge-from="([a-z0-9_]+)" data-edge-to="([a-z0-9_]+)"', body)))
+    if want != got:
+        only_json = [e for e in want if e not in got]
+        only_html = [e for e in got if e not in want]
+        if only_json:
+            errors.append(
+                "диаграмма: в JSON есть рёбра, которых нет в HTML — "
+                f"{only_json} (пересобрать: archify deliver)")
+        if only_html:
+            errors.append(
+                "диаграмма: в HTML есть рёбра, которых нет в JSON — "
+                f"{only_html} (HTML руками не править)")
+    return errors
+
+
 CHECKS = (
     ("лицензия кода", check_license),
     ("quickstart", check_quickstart),
@@ -409,6 +440,7 @@ CHECKS = (
     ("воспроизводимость чисел", check_metric_numbers),
     ("описанность скриптов", check_scripts_documented),
     ("замеры = research_bench.json", check_bench_numbers),
+    ("диаграмма = connections JSON", check_diagram_edges),
 )
 
 

@@ -10,9 +10,9 @@ DATA = dict(
     title='Vector Prediction',
     subtitle='Гибридный пайплайн TimesFM: прод-прогноз на 2.5, исследования на 3.0 — '
              'спрос, продажи, трафик кампаний',
-    chips=[('2.5', 'прод · Apache'), ('3.0', 'research'), ('~5x', 'быстрее ковариаты')],
+    chips=[('2.5', 'прод · Apache'), ('3.0', 'research'), ('~6x', 'быстрее ковариаты')],
     github='github.com/Osmosy/vector-prediction',
-    # hero_art=('full', 'prediction_hero.png'),  # TODO: свой арт, см. docs/agent-tasks.md
+    hero_art=('full', 'prediction_hero.png'),
     footer_tag='Osmosy · Hermes Agent · 2026',
     intro_lead='Zero-shot прогнозирование спроса, продаж и трафика кампаний без '
                'обучения под задачу — локально на CPU. Два контура, разделённые по лицензии.',
@@ -77,7 +77,7 @@ DATA = dict(
     # 06 · Архитектура
     arch_items=[
         ('Контур A · ПРОД — TimesFM 2.5, Apache-2.0', 'campaign_forecast.py: точечный прогноз + 60/80% интервалы, XReg-ковариаты (промо, праздники, цены), аномалии, holdout-метрики'),
-        ('Контур B · RESEARCH — TimesFM 3.0, non-commercial', 'research_bench.py: нативная мультисерийность, past-future ковариаты за один проход (~5x быстрее), 9 квантилей'),
+        ('Контур B · RESEARCH — TimesFM 3.0, non-commercial', 'research_bench.py: нативная мультисерийность, past-future ковариаты за один проход (~6x быстрее), 9 квантилей'),
         ('Лицензионная граница', 'Прогноз 3.0 не попадает в производственные решения — только внутреннее сравнение моделей. Пути к коммерческому 3.0: Apache-релиз, BigQuery AI.FORECAST, прямая лицензия'),
     ],
 
@@ -96,12 +96,12 @@ DATA = dict(
     # 08 · Бенчмарк — только воспроизводимые числа: out/research_bench.json
     bench_rows=[
         ('MAE, clicks (контекст 106, горизонт 14)', '33.75', '31.42', '67.77', '40.55'),
-        ('Время прогноза', '0.15 с', '1.29 с', '0.22 с', '0.24 с'),
+        ('Время прогноза', '0.17 с', '1.30 с', '0.20 с', '0.22 с'),
         ('Ковариат промо', '—', 'XReg', '—', 'нативный'),
         ('Лицензия весов', 'Apache-2.0', 'Apache-2.0', 'non-comm.', 'non-comm.'),
     ],
     bench_head=('Метрика', '2.5 база', '2.5 XReg', '3.0 база', '3.0 ковар'),
-    bench_note='Повторить: research_bench.py --input data/sample/history.csv --value-col clicks (04.09.2026, Ryzen AI 9 H 365, 20 CPU).',
+    bench_note='Повторить: research_bench.py --input data/sample/history.csv --value-col clicks (27.09.2026, Ryzen AI 9 H 365, 20 CPU).',
 
     # 09 · Выход прогноза
     out_head=('Дата', 'Forecast', 'Cautious', 'Optimistic', 'Промо'),
@@ -138,7 +138,7 @@ DATA = dict(
     final_sub='github.com/Osmosy/vector-prediction',
 )
 
-from engine import kicker, title_block, footer, bg_fill, card, chip, wide_panel, \
+from engine import kicker, title_block, footer, bg_fill, card, chip, \
     add_text, add_rect, add_bullets
 from pptx.util import Inches, Pt
 from pptx.enum.text import PP_ALIGN
@@ -262,29 +262,6 @@ def sl_title(slide, th, D):
                              Inches(12.20), Inches(0.30), width=Inches(0.9))
 
 
-def _three_cards(slide, th, D, cards_key, head_key, lead_key, panel_key, panel_lines_key, num):
-    bg_fill(slide, th)
-    kicker(slide, th, f'{num:02d} · ')
-    return None  # не используется
-
-
-def _content_slide(slide, th, D, num, head, lead, cards, panel_head, panel_lines):
-    bg_fill(slide, th)
-    kicker(slide, th, f'{num:02d} · ')
-    title_block(slide, th, head)
-    if lead:
-        add_text(slide, 0.62, 1.75, 12.1, 0.5, lead, size=13,
-                 font=th['f_body'], color=th['muted'])
-    cw, gap, m = 3.95, 0.25, 0.62
-    for i, (ch, lines) in enumerate(cards):
-        card(slide, th, m + i*(cw+gap), 2.42 if lead else 2.15, cw, 2.9 if lead else 3.2,
-             ch, lines)
-    if panel_head:
-        wide_panel(slide, th, 0.62, 5.62 if lead else 5.62, 12.1,
-                   1.75 if panel_lines and len(panel_lines) > 2 else 1.45,
-                   panel_head, panel_lines)
-
-
 def sl_intro(slide, th, D):
     bg_fill(slide, th)
     kicker(slide, th, '01 · Введение')
@@ -339,7 +316,7 @@ def sl_roles(slide, th, D):
         card(slide, th, xs[i], 2.10, 2.92, 2.0, h, l.split('\n'), num=i + 1)
         if i < 3:
             add_rect(slide, xs[i] + 2.97, 3.05, 0.28, 0.035, fill=th['accent'])
-    wide_panel(slide, th, 0.83, 4.70, 11.67, 2.1, D['roles_panel'], D['roles_lines'])
+    _panel(slide, th, 0.83, 11.67, D['roles_panel'], D['roles_lines'])
     footer(slide, th, 6)
 
 
@@ -371,7 +348,7 @@ def sl_bench(slide, th, D):
     _table(slide, th, 0.62, 2.05, [3.9, 1.55, 1.55, 1.55, 1.55],
            D['bench_head'], D['bench_rows'], row_h=0.52, hl_col=2)
     _panel(slide, th, 0.62, 12.1, 'Как читать', [
-        '!Вывод: на ряде из репо точнее 2.5 + XReg (MAE 31.42 против 40.55 у 3.0 с ковариатом); 3.0 быстрее в ковариатном прогнозе (~5x).',
+        '!Вывод: на ряде из репо точнее 2.5 + XReg (MAE 31.42 против 40.55 у 3.0 с ковариатом); 3.0 быстрее в ковариатном прогнозе (~6x).',
         'Прод-выбор 2.5 оправдан и лицензией, и точностью; 3.0 — быстрый тест-прогон перед боевым расчётом на 2.5.',
         D['bench_note'],
     ])
